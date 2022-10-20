@@ -130,21 +130,34 @@ public class Service {
     }
 
     private int revenuePerCheck(final Check check) {
-        return check.getProducts().stream().mapToInt(e -> e.getPrice() * e.getAmount()).sum();
+        return check.getProducts()
+                .stream()
+                .mapToInt(e -> e.getPrice() * e.getAmount()).sum();
+    }
+
+    private int sumRevenueCheck(final List<Check> listOfCheck) {
+        return listOfCheck.stream().mapToInt(this::revenuePerCheck).sum();
     }
 
     public int highestRevenue() {
 
         final List<Check> checks = new ArrayList<>();
         customerList.forEach(e -> checks.addAll(e.getListCheck()));
-        return checks.stream().collect(Collectors.groupingBy(Check::getLocalDate))
-                .entrySet().stream()
-                .collect(Collectors
-                        .toMap(Map.Entry::getKey, e -> e.getValue()
-                                .stream().mapToInt(this::revenuePerCheck)
-                                .sum())).entrySet().stream()
-                .max(Map.Entry.comparingByKey()).get().getValue();
+
+        final Map<LocalDate, List<Check>> groupedByDate = checks
+                .stream()
+                .collect(Collectors.groupingBy(Check::getLocalDate));
+
+        final Map<LocalDate, Integer> mapOfRevenue = groupedByDate
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> sumRevenueCheck(e.getValue())));
 
 
+        return mapOfRevenue.entrySet()
+                .stream()
+                .max(Map.Entry.comparingByValue())
+                .get()
+                .getValue();
     }
 }
